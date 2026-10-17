@@ -1,0 +1,40 @@
+name: UltimatePops
+version: '1.0'
+main: com.tuserver.ultimatepops.UltimatePops
+api-version: '1.20'
+author: Bughatti
+softdepend: [PlaceholderAPI]
+
+commands:
+  totem:
+    description: Abre el menu de practica de totems (uso general, sin permisos)
+    usage: /totem
+  up:
+    description: Abre el menu de UltimatePops (staff)
+    usage: /up
+    permission: ultimatepops.admin
+  upops:
+    description: Abre el menu de UltimatePops (staff)
+    usage: /upops
+    permission: ultimatepops.admin
+  pop:
+    description: Abre el menu de UltimatePops (staff)
+    usage: /pop
+    permission: ultimatepops.admin
+  totempractice:
+    description: Abre el menu de UltimatePops (staff)
+    usage: /totempractice
+    permission: ultimatepops.admin
+  poppractice:
+    description: Abre el menu de UltimatePops (staff)
+    usage: /poppractice
+    permission: ultimatepops.admin
+  ultimapops:
+    description: Abre el menu de UltimatePops (staff)
+    usage: /ultimapops
+    permission: ultimatepops.admin
+
+permissions:
+  ultimatepops.admin:
+    description: Permite usar los comandos de staff de UltimatePops
+    default: op
