@@ -1,0 +1,46 @@
+# ============================================================
+#  UltimatePops - configuracion de mensajes (los textos del
+#  menu estan en menu.yml, este archivo es solo mensajes de chat)
+#  Usa & para colores o &#RRGGBB para hex.
+#  Despues de editar, usa /up reload para aplicar cambios.
+# ============================================================
+
+mensajes:
+  practica_iniciada: "&aPractica iniciada: &e%modo% &acada &e%ticks% &aticks."
+  practica_reponete: "&7Reponete los totems vos mismo. Usa /totem stop para detenerla."
+  practica_detenida: "&cPractica de totems detenida."
+  practica_no_activa: "&7No tenias ninguna practica activa."
+  reload_ok: "&aUltimatePops: datos y configuracion recargados."
+  sin_permiso: "&cNo tenes permiso para hacer eso."
+  stats_clear_ok: "&aSe reinicio el top global de totems popeados."
+  stats_removeplayer_ok: "&aSe elimino a %nick% del top."
+  stats_removeplayer_no_existe: "&7Ese jugador no aparece en el top."
+  stats_removeplayer_uso: "&cUso: /up removeplayer <nick>"
+  stats_addplayer_ok: "&aSe agrego a %nick% al top con %cantidad% totems popeados."
+  stats_addplayer_uso: "&cUso: /up addplayer <nick> <cantidad>"
+  stats_addplayer_numero_invalido: "&cLa cantidad tiene que ser un numero."
+  solo_jugadores: "Este comando solo puede usarse en el juego."
+
+ayuda:
+  lineas:
+    - "&6&l==== Comandos de UltimatePops ===="
+    - "&e/totem&7 - Abre el menu de practica de totems."
+    - "&e/totem stop&7 - Detiene tu practica activa."
+    - "&e/up, /upops, /pop, /totempractice, /poppractice, /ultimapops&7 - Alias de staff."
+    - "&e/up reload&7 - Recarga los datos y la configuracion."
+    - "&e/up help&7 - Muestra esta ayuda."
+    - "&e/up clear&7 - Reinicia el top global."
+    - "&e/up removeplayer <nick>&7 - Saca a un jugador del top (alias: rmpl)."
+    - "&e/up addplayer <nick> <cantidad>&7 - Agrega a un jugador al top (alias: addpl)."
+
+# Resumen que se muestra al morir en una practica.
+derrota:
+  encabezado: "&c&l[!] &c¡Perdiste!"
+  titulo: "&e&lPARTIDA TERMINADA"
+  pops: "&7Total pops: &f%pops%"
+  modo: "&7Modo: &f%modo%"
+  ticks: "&7Ticks: &f%ticks%"
+  duracion: "&7Duracion: &f%duracion%s"
+  record_nuevo: "&a¡NUEVO RECORD PERSONAL!"
+  record_detalle: "&7Anterior: &f%record_anterior% pops &7- &7Nuevo: &f%record_nuevo% pops"
+  record_actual: "&7Record personal: &f%record% pops"
