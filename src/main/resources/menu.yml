@@ -1,0 +1,38 @@
+# ============================================================
+#  UltimatePops - menu.yml
+#  Menu principal, lores y menus de modos/ticks.
+#
+#  Soporta HEX: escribi los colores como &#RRGGBB. Podes
+#  encadenar uno por letra para armar un degradado, por ejemplo:
+#  "&#FDFF00&lM&#FEFF2C&lE&#FFFF58&lN&#FFFF84&lU"
+#
+#  Despues de editar, usa /up reload (o cualquier alias de
+#  staff seguido de "reload") para aplicar los cambios sin
+#  reiniciar el server.
+# ============================================================
+
+menu-principal:
+  titulo: "&#FF5555&l[!] &#FFAA00&lPractica de Totems"
+  modos:
+    infinito:
+      nombre: "&#55FF55&lInfinito"
+      lore:
+        - "&7El totem se repone"
+        - "&7solo, para siempre."
+    full:
+      nombre: "&#FFFF55&lFull hasta agotar"
+      lore:
+        - "&7Inventario completo de"
+        - "&7totems, sin reposicion."
+    random:
+      nombre: "&#FF5555&lRandom"
+      lore:
+        - "&7Te van apareciendo totems"
+        - "&7en slots al azar."
+
+menu-ticks:
+  titulo: "&#55AAFF&lTicks (%modo%)"
+  item-nombre: "&#55FFFF&lCada %ticks% ticks"
+  item-lore:
+    - "&7Click para comenzar la practica"
+  volver: "&7« Volver"
