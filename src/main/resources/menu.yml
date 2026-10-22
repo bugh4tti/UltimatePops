@@ -1,6 +1,6 @@
 # ============================================================
 #  UltimatePops - menu.yml
-#  Menu principal, lores y menus de modos/ticks.
+#  Menu principal, lores, menus de modos/ticks y decoracion.
 #
 #  Soporta HEX: escribi los colores como &#RRGGBB. Podes
 #  encadenar uno por letra para armar un degradado, por ejemplo:
@@ -10,6 +10,16 @@
 #  staff seguido de "reload") para aplicar los cambios sin
 #  reiniciar el server.
 # ============================================================
+
+decoracion:
+  borde-material: GRAY_STAINED_GLASS_PANE
+  esquinas-material: BLACK_STAINED_GLASS_PANE
+  info-nombre: "&#55FFFF&lTus estadisticas"
+  info-lore:
+    - "&7Record Infinito: &f%record_infinito%"
+    - "&7Record Full: &f%record_full%"
+    - "&7Record Random: &f%record_random%"
+    - "&7Total popeados: &f%pops_global%"
 
 menu-principal:
   titulo: "&#FF5555&l[!] &#FFAA00&lPractica de Totems"
