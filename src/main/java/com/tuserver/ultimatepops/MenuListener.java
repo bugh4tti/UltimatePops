@@ -1,6 +1,8 @@
 package com.tuserver.ultimatepops;
 
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -53,7 +55,7 @@ public class MenuListener implements Listener {
             if (slot == SLOT_INFINITO) modo = "infinito";
             else if (slot == SLOT_FULL) modo = "full";
             else if (slot == SLOT_RANDOM) modo = "random";
-            else return; // Panel de borde u otro slot sin funcion
+            else return; // Panel de borde, item de estadisticas, u otro slot sin funcion
 
             plugin.getSelectedModo().put(player.getUniqueId(), modo);
             player.openInventory(plugin.createTicksMenu(modo));
@@ -62,7 +64,7 @@ public class MenuListener implements Listener {
 
         // Menu de ticks
         if (slot == SLOT_VOLVER) {
-            player.openInventory(plugin.createMainMenu());
+            player.openInventory(plugin.createMainMenu(player));
             return;
         }
 
@@ -87,11 +89,15 @@ public class MenuListener implements Listener {
         BukkitTask previous = plugin.getActiveTasks().remove(id);
         if (previous != null) previous.cancel();
 
+        plugin.saveOriginalInventory(player);
         prepararInventarioInicial(player, modo);
         plugin.startSession(id, modo, ticks);
         player.sendMessage(plugin.getMsg("mensajes.practica_iniciada", "modo", plugin.getModoNombre(modo), "ticks", String.valueOf(ticks)));
         player.sendMessage(plugin.getMsg("mensajes.practica_reponete"));
 
+        // Cada intervalo: si tiene un totem listo en la offhand, lo "popea" (se consume, con
+        // sonido/particula, sin ningun dano real). Si NO tiene uno listo, ahi termina la ronda
+        // sin matarlo: se le devuelve el inventario original.
         BukkitTask task = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             if (!player.isOnline()) {
                 BukkitTask t = plugin.getActiveTasks().remove(id);
@@ -99,23 +105,51 @@ public class MenuListener implements Listener {
                 return;
             }
 
-            switch (modo) {
-                case "infinito":
-                    asegurarOffhandInfinito(player);
-                    break;
-                case "random":
-                    agregarTotemAleatorio(player);
-                    break;
-                case "full":
-                default:
-                    // No se toca nada: el jugador se maneja solo con lo que ya tiene.
-                    break;
-            }
+            PlayerInventory inv = player.getInventory();
+            ItemStack offhand = inv.getItemInOffHand();
 
-            player.damage(1000.0);
+            if (offhand != null && offhand.getType() == Material.TOTEM_OF_UNDYING) {
+                consumirOffhand(inv, offhand);
+                registrarPop(player, modo);
+                reponerSegunModo(player, modo);
+            } else {
+                plugin.finalizarRonda(player, true);
+            }
         }, ticks, ticks);
 
         plugin.getActiveTasks().put(id, task);
+    }
+
+    private void consumirOffhand(PlayerInventory inv, ItemStack offhand) {
+        offhand.setAmount(offhand.getAmount() - 1);
+        if (offhand.getAmount() <= 0) {
+            inv.setItemInOffHand(null);
+        } else {
+            inv.setItemInOffHand(offhand);
+        }
+    }
+
+    private void registrarPop(Player player, String modo) {
+        plugin.incrementPop(player.getUniqueId(), modo);
+        plugin.incrementSessionPop(player.getUniqueId());
+
+        player.getWorld().spawnParticle(Particle.TOTEM, player.getLocation().add(0, 1, 0), 30);
+        player.playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
+    }
+
+    private void reponerSegunModo(Player player, String modo) {
+        switch (modo) {
+            case "infinito":
+                asegurarOffhandInfinito(player);
+                break;
+            case "random":
+                agregarTotemAleatorio(player);
+                break;
+            case "full":
+            default:
+                // No se repone nada: el jugador se maneja solo con lo que ya tiene.
+                break;
+        }
     }
 
     /** Vacia todo el inventario y lo prepara segun el modo elegido. */
@@ -198,4 +232,4 @@ public class MenuListener implements Listener {
             inv.setBoots(new ItemStack(Material.TOTEM_OF_UNDYING, 1));
         }
     }
-          }
+}
