@@ -12,7 +12,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -42,6 +44,11 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
     private final Map<UUID, String> sessionModo = new HashMap<>();
     private final Map<UUID, Integer> sessionTicks = new HashMap<>();
     private final Map<UUID, Long> sessionStart = new HashMap<>();
+
+    // Inventario original del jugador antes de entrar a practicar, para devolverselo despues.
+    private final Map<UUID, ItemStack[]> savedContents = new HashMap<>();
+    private final Map<UUID, ItemStack[]> savedArmor = new HashMap<>();
+    private final Map<UUID, ItemStack> savedOffhand = new HashMap<>();
 
     private File statsFile;
     private YamlConfiguration statsConfig;
@@ -110,6 +117,32 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
         return ChatColor.translateAlternateColorCodes('&', buffer.toString());
     }
 
+    // ==================== Guardado / restauracion del inventario original ====================
+
+    /** Guarda el inventario tal cual esta ahora, para poder devolverselo cuando termine la practica. */
+    public void saveOriginalInventory(Player player) {
+        PlayerInventory inv = player.getInventory();
+        UUID id = player.getUniqueId();
+        savedContents.put(id, inv.getContents().clone());
+        savedArmor.put(id, inv.getArmorContents().clone());
+        savedOffhand.put(id, inv.getItemInOffHand().clone());
+    }
+
+    /** Devuelve exactamente lo que el jugador tenia antes de empezar a practicar. Los totems que
+     *  dio el plugin (y cualquier cosa que haya quedado de la practica) desaparecen. */
+    public void restoreOriginalInventory(Player player) {
+        UUID id = player.getUniqueId();
+        PlayerInventory inv = player.getInventory();
+
+        inv.setContents(savedContents.getOrDefault(id, new ItemStack[36]));
+        inv.setArmorContents(savedArmor.getOrDefault(id, new ItemStack[4]));
+        inv.setItemInOffHand(savedOffhand.getOrDefault(id, null));
+
+        savedContents.remove(id);
+        savedArmor.remove(id);
+        savedOffhand.remove(id);
+    }
+
     // ==================== menu.yml ====================
 
     private void loadMenuConfig() {
@@ -160,6 +193,40 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
 
     public String getVolverTexto() {
         return color(menuConfig.getString("menu-ticks.volver", "« Volver"));
+    }
+
+    private Material getMaterialDecoracion(String path, Material fallback) {
+        String nombre = menuConfig.getString(path, fallback.name());
+        try {
+            return Material.valueOf(nombre.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
+    }
+
+    public Material getBordeMaterial() {
+        return getMaterialDecoracion("decoracion.borde-material", Material.GRAY_STAINED_GLASS_PANE);
+    }
+
+    public Material getEsquinasMaterial() {
+        return getMaterialDecoracion("decoracion.esquinas-material", Material.BLACK_STAINED_GLASS_PANE);
+    }
+
+    public String getInfoNombre() {
+        return color(menuConfig.getString("decoracion.info-nombre", "&bTus estadisticas"));
+    }
+
+    public List<String> getInfoLore(Player player) {
+        UUID id = player.getUniqueId();
+        List<String> resultado = new ArrayList<>();
+        for (String linea : menuConfig.getStringList("decoracion.info-lore")) {
+            linea = linea.replace("%record_infinito%", String.valueOf(getRecord(id, "infinito")));
+            linea = linea.replace("%record_full%", String.valueOf(getRecord(id, "full")));
+            linea = linea.replace("%record_random%", String.valueOf(getRecord(id, "random")));
+            linea = linea.replace("%pops_global%", String.valueOf(getPlayerPops(id, CATEGORIA_GLOBAL)));
+            resultado.add(color(linea));
+        }
+        return resultado;
     }
 
     // ==================== config.yml (mensajes) ====================
@@ -358,6 +425,49 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
         sessionStart.remove(uuid);
     }
 
+    // ==================== Fin de ronda (sin muerte) ====================
+
+    /** Corta la practica: cancela la tarea, le devuelve al jugador el inventario que tenia antes
+     *  (los totems que dio el plugin desaparecen), actualiza records y, si corresponde, manda el
+     *  resumen de la ronda. No hay ninguna muerte real de por medio en ningun caso. */
+    public void finalizarRonda(Player player, boolean conResumen) {
+        UUID id = player.getUniqueId();
+
+        BukkitTask task = activeTasks.remove(id);
+        if (task != null) task.cancel();
+
+        int pops = getSessionPops(id);
+        String modo = getSessionModo(id);
+        int ticks = getSessionTicks(id);
+        double duracion = getSessionDurationSeconds(id);
+
+        int recordAnterior = getRecord(id, modo);
+        boolean esRecordNuevo = updateRecordIfHigher(id, modo, pops);
+
+        restoreOriginalInventory(player);
+        clearSessionPops(id);
+
+        if (conResumen) {
+            player.sendMessage(getMsg("resumen.encabezado"));
+            player.sendMessage(getMsg("resumen.titulo"));
+            player.sendMessage(getMsg("resumen.pops", "pops", String.valueOf(pops)));
+            player.sendMessage(getMsg("resumen.modo", "modo", getModoNombre(modo)));
+            player.sendMessage(getMsg("resumen.ticks", "ticks", String.valueOf(ticks)));
+            player.sendMessage(getMsg("resumen.duracion", "duracion", String.format(Locale.US, "%.1f", duracion)));
+
+            if (esRecordNuevo) {
+                player.sendMessage(getMsg("resumen.record_nuevo"));
+                player.sendMessage(getMsg("resumen.record_detalle",
+                        "record_anterior", String.valueOf(recordAnterior),
+                        "record_nuevo", String.valueOf(pops)));
+            } else {
+                player.sendMessage(getMsg("resumen.record_actual", "record", String.valueOf(recordAnterior)));
+            }
+        } else {
+            player.sendMessage(getMsg("mensajes.practica_detenida"));
+        }
+    }
+
     // ==================== Comando ====================
 
     @Override
@@ -387,10 +497,8 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
             }
 
             if (sub.equals("stop")) {
-                BukkitTask task = activeTasks.remove(player.getUniqueId());
-                if (task != null) {
-                    task.cancel();
-                    player.sendMessage(getMsg("mensajes.practica_detenida"));
+                if (activeTasks.containsKey(player.getUniqueId())) {
+                    finalizarRonda(player, false);
                 } else {
                     player.sendMessage(getMsg("mensajes.practica_no_activa"));
                 }
@@ -441,7 +549,7 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
             }
         }
 
-        player.openInventory(createMainMenu());
+        player.openInventory(createMainMenu(player));
         return true;
     }
 
@@ -477,8 +585,9 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
 
     // ==================== Menus ====================
 
-    /** Menu de 54 slots con borde de paneles grises y 3 modos centrados (slots 20, 22, 24). */
-    public Inventory createMainMenu() {
+    /** Menu de 54 slots, borde de dos tonos (esquinas + bordes), 3 modos centrados (slots 20,22,24)
+     *  y un item de estadisticas personales del jugador (slot 4). */
+    public Inventory createMainMenu(Player player) {
         Inventory inv = Bukkit.createInventory(null, 54, getMainMenuTitle());
 
         fillBorder(inv);
@@ -487,10 +596,18 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
         inv.setItem(22, buildItem(Material.YELLOW_WOOL, getModoNombre("full"), getModoLore("full")));
         inv.setItem(24, buildItem(Material.RED_WOOL, getModoNombre("random"), getModoLore("random")));
 
+        ItemStack infoItem = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) infoItem.getItemMeta();
+        meta.setOwningPlayer(player);
+        meta.setDisplayName(getInfoNombre());
+        meta.setLore(getInfoLore(player));
+        infoItem.setItemMeta(meta);
+        inv.setItem(4, infoItem);
+
         return inv;
     }
 
-    /** Menu de 54 slots con borde de paneles grises y 5 opciones de ticks centradas (slots 19,21,22,23,25). */
+    /** Menu de 54 slots con borde de dos tonos y 5 opciones de ticks centradas (slots 19,21,22,23,25). */
     public Inventory createTicksMenu(String modo) {
         Inventory inv = Bukkit.createInventory(null, 54, getTicksMenuTitle(modo));
 
@@ -508,17 +625,23 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
         return inv;
     }
 
+    /** Borde de dos tonos: las 4 esquinas con un material, el resto del marco con otro (look
+     *  tipo panel/dashboard, mas prolijo que un borde de un solo color). */
     private void fillBorder(Inventory inv) {
-        ItemStack panel = buildItem(Material.GRAY_STAINED_GLASS_PANE, " ", null);
+        ItemStack panelBorde = buildItem(getBordeMaterial(), " ", null);
+        ItemStack panelEsquina = buildItem(getEsquinasMaterial(), " ", null);
+
         int size = inv.getSize();
         int rows = size / 9;
+
+        Set<Integer> esquinas = new HashSet<>(Arrays.asList(0, 8, size - 9, size - 1));
 
         for (int slot = 0; slot < size; slot++) {
             int row = slot / 9;
             int col = slot % 9;
             boolean isBorder = row == 0 || row == rows - 1 || col == 0 || col == 8;
             if (isBorder) {
-                inv.setItem(slot, panel);
+                inv.setItem(slot, esquinas.contains(slot) ? panelEsquina : panelBorde);
             }
         }
     }
@@ -533,4 +656,4 @@ public class UltimatePops extends JavaPlugin implements CommandExecutor, TabComp
         item.setItemMeta(meta);
         return item;
     }
-                           }
+                    }
