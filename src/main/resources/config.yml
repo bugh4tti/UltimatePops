@@ -8,7 +8,7 @@
 mensajes:
   practica_iniciada: "&aPractica iniciada: &e%modo% &acada &e%ticks% &aticks."
   practica_reponete: "&7Reponete los totems vos mismo. Usa /totem stop para detenerla."
-  practica_detenida: "&cPractica de totems detenida."
+  practica_detenida: "&cPractica de totems detenida. Se te devolvio tu inventario."
   practica_no_activa: "&7No tenias ninguna practica activa."
   reload_ok: "&aUltimatePops: datos y configuracion recargados."
   sin_permiso: "&cNo tenes permiso para hacer eso."
@@ -25,7 +25,7 @@ ayuda:
   lineas:
     - "&6&l==== Comandos de UltimatePops ===="
     - "&e/totem&7 - Abre el menu de practica de totems."
-    - "&e/totem stop&7 - Detiene tu practica activa."
+    - "&e/totem stop&7 - Detiene tu practica activa (te devuelve tu inventario)."
     - "&e/up, /upops, /pop, /totempractice, /poppractice, /ultimapops&7 - Alias de staff."
     - "&e/up reload&7 - Recarga los datos y la configuracion."
     - "&e/up help&7 - Muestra esta ayuda."
@@ -33,10 +33,11 @@ ayuda:
     - "&e/up removeplayer <nick>&7 - Saca a un jugador del top (alias: rmpl)."
     - "&e/up addplayer <nick> <cantidad>&7 - Agrega a un jugador al top (alias: addpl)."
 
-# Resumen que se muestra al morir en una practica.
-derrota:
-  encabezado: "&c&l[!] &c¡Perdiste!"
-  titulo: "&e&lPARTIDA TERMINADA"
+# Resumen que se muestra cuando se termina una ronda (al quedarte sin totems listos).
+# No implica que el jugador murio: solo se le acaban los totems y se corta la practica.
+resumen:
+  encabezado: "&e&l[!] &eSe te acabaron los totems"
+  titulo: "&e&lRONDA TERMINADA"
   pops: "&7Total pops: &f%pops%"
   modo: "&7Modo: &f%modo%"
   ticks: "&7Ticks: &f%ticks%"
